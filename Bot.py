@@ -168,11 +168,13 @@ if __name__ == '__main__':
         por_pos = bot.portal_position()
         print(chr_pos, por_pos)
         if chr_pos is None or por_pos is None:
-            print(bot.char_on_portal())
-            if np.random.rand(1)[0] > 0.5:
-                bot.click('right', 2)
-            else:
-                bot.click('left', 2)
+            on_point = bot.char_on_portal()
+            print(on_point)
+            if on_point:
+                if np.random.rand(1)[0] > 0.5:
+                    bot.click('right', 2)
+                else:
+                    bot.click('left', 2)
         else:
             if chr_pos[0] - por_pos[0] > -1:
                 Thread(target=bot.click, args=('left', 0.15)).start()
