@@ -15,9 +15,23 @@ import sys
 import time
 import Keys
 import win32gui
-import keyboard
+import numpy as np
+from PIL import Image
+import os
+from threading import Thread
 
 pyautogui.FAILSAFE = True
+
+def flip_image(image_path, saved_location):
+    """
+    Flip or mirror the image
+
+    @param image_path: The path to the image to edit
+    @param saved_location: Path to save the cropped image
+    """
+    image_obj = Image.open(image_path)
+    rotated_image = image_obj.transpose(Image.FLIP_LEFT_RIGHT)
+    rotated_image.save(saved_location)
 
 def set_windows_front(program_name):
     def windowEnumerationHandler(hwnd, top_windows):
@@ -31,6 +45,13 @@ def set_windows_front(program_name):
             win32gui.ShowWindow(i[0],5)
             win32gui.SetForegroundWindow(i[0])
             # break
+
+def flip_in_game_pics():
+    prefix = './pics/in_game'
+    filelist = ['char', 'char_on_portal']
+    for filename in filelist:
+        print(filename)
+        flip_image(os.path.join(prefix, filename + '.png'), os.path.join(prefix, filename + '_flip.png'))
 
 class NoKeyboardException(Exception):
     def __init__(self):
@@ -70,7 +91,7 @@ class Bot():
                 timeDifference / 3600))
         return output
 
-    def locate(self, key, relative_size=(None, None)):
+    def locate_key(self, key, relative_size=(None, None)):
         loc = getattr(self.keys, key)
         pos_x = loc[0]
         pos_y = loc[1]
@@ -78,11 +99,11 @@ class Bot():
         size_y = loc[3] if (relative_size[1] is None) else relative_size[1]
         return (pos_x + size_x//2, pos_y + size_y//2)
 
-    def _moveTo(self, key, relative_size=(None, None)):
+    def _mouse_moveTo(self, key, relative_size=(None, None)):
         """
         Helper method that moves the mouse to a specified coordinate.
         """
-        x, y = self.locate(key, relative_size)
+        x, y = self.locate_key(key, relative_size)
         pyautogui.moveTo(x, y)
 
     def click(self, key, duration=0.5, relative_size=(None, None)):
@@ -95,12 +116,27 @@ class Bot():
         pyautogui.click(x, y, interval=duration)
 
         '''
-        self._moveTo(key, relative_size)
+        self._mouse_moveTo(key, relative_size)
 
         pyautogui.mouseDown()
         time.sleep(duration)
         pyautogui.mouseUp()
         time.sleep(0.25)
+
+    def charactor_position(self):
+        rtn = pyautogui.locateOnScreen('./pics/in_game/char.png', grayscale=True, confidence=0.7)
+        if rtn is None:
+            return pyautogui.locateOnScreen('./pics/in_game/char_flip.png', grayscale=True, confidence=0.7)
+        return rtn
+
+    def portal_position(self):
+        return pyautogui.locateOnScreen('./pics/in_game/portal.png', grayscale=True, confidence=0.95)
+
+    def char_on_portal(self):
+        if pyautogui.locateOnScreen('./pics/in_game/char_on_portal.png', grayscale=True, confidence=0.95) is None:
+            if pyautogui.locateOnScreen('./pics/in_game/char_on_portal_flip.png', grayscale=True, confidence=0.95) is None:
+                return True
+        return False
 
     def checkHealth(self, pot_key):
         """
@@ -123,8 +159,22 @@ class Bot():
             self.mana_pots_used += 1
 
 if __name__ == '__main__':
+    flip_in_game_pics()
 
     bot = Bot()
     set_windows_front('maplestory')
     while(True):
-        bot.click('left', 5)
+        chr_pos = bot.charactor_position()
+        por_pos = bot.portal_position()
+        print(chr_pos, por_pos)
+        if chr_pos is None or por_pos is None:
+            print(bot.char_on_portal())
+            if np.random.rand(1)[0] > 0.5:
+                bot.click('right', 2)
+            else:
+                bot.click('left', 2)
+        else:
+            if chr_pos[0] - por_pos[0] > -1:
+                Thread(target=bot.click, args=('left', 0.15)).start()
+            elif por_pos[0] - chr_pos[0] > -1:
+                Thread(target=bot.click, args=('right', 0.15)).start()
