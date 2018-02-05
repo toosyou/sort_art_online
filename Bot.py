@@ -133,10 +133,10 @@ class Bot():
         return pyautogui.locateOnScreen('./pics/in_game/portal.png', grayscale=True, confidence=0.95)
 
     def char_on_portal(self):
-        if pyautogui.locateOnScreen('./pics/in_game/char_on_portal.png', grayscale=True, confidence=0.95) is None:
-            if pyautogui.locateOnScreen('./pics/in_game/char_on_portal_flip.png', grayscale=True, confidence=0.95) is None:
-                return True
-        return False
+        if pyautogui.locateOnScreen('./pics/in_game/char_on_portal.png', grayscale=True, confidence=0.8) is None:
+            if pyautogui.locateOnScreen('./pics/in_game/char_on_portal_flip.png', grayscale=True, confidence=0.8) is None:
+                return False
+        return True
 
     def checkHealth(self, pot_key):
         """
